@@ -2,6 +2,8 @@
 
 import gleam/int
 import lustre
+import lustre/attribute
+import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
