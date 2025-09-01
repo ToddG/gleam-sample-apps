@@ -1,38 +1,32 @@
-The log shows the steps made for configuring this app.
+# toddg/simple branch
 
+This is an example of how to configure:
+* tauri
+* gleam
+* vite
+* gleam-vite
+* lustre
 
-commit 515449e72bc54b82698b1c0bcc1fae491a7a28e5
-Author: ToddG <toddg@zwrob.com>
-Date:   Mon Sep 1 14:52:20 2025 -0700
+## quickstart
 
-    add before and after divs for debugging
+```
+pnpm install
+pnpm tauri dev
+```
 
-commit 29654639784aed9a0d5996e1359d98e19091de61
-Author: ToddG <toddg@zwrob.com>
-Date:   Mon Sep 1 14:33:37 2025 -0700
+## steps
+The log shows the steps made for configuring this app:
 
-    add lustre app
+```
+0ff8935 add lustre app
+96304bd add vite-config
+3554aa4 configure vite
+d538b7c integrate vite
+ae29b24 initial commit
+```
 
-commit 96304bde74f25ce9c5011ab3a631aa2443befc0f
-Author: ToddG <toddg@zwrob.com>
-Date:   Mon Sep 1 14:20:42 2025 -0700
-
-    add vite-config
-
-commit 3554aa4bdbed456a95478e0d1543a666fc1bbb5f
-Author: ToddG <toddg@zwrob.com>
-Date:   Mon Sep 1 14:09:38 2025 -0700
-
-    configure vite
-
-commit d538b7c15cc1c146a53c7025de0761451e8e57ed
-Author: ToddG <toddg@zwrob.com>
-Date:   Mon Sep 1 13:51:57 2025 -0700
-
-    integrate vite
-
-commit ae29b24452bb6fd89bac1bf8eb95da7cb2d28d9f
-Author: ToddG <toddg@zwrob.com>
-Date:   Mon Sep 1 13:31:03 2025 -0700
-
-    initial commit
+## links
+* https://vite.dev/guide/
+* https://github.com/Enderchief/gleam-tools
+* https://v2.tauri.app/start/create-project/
+* https://github.com/lustre-labs/dev-tools/issues/42#issuecomment-2188482606
