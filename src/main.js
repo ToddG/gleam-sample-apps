@@ -16,3 +16,7 @@ window.addEventListener("DOMContentLoaded", () => {
     greet();
   });
 });
+
+import { main } from "./app.gleam"
+
+main({})
