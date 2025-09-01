@@ -4,9 +4,12 @@
   "version": "0.1.0",
   "identifier": "com.toddg.take4",
   "build": {
+    "beforeDevCommand": "pnpm build && pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:5173",
     "frontendDist": "../dist"
   },
-  "app": {
+    "app": {
     "withGlobalTauri": true,
     "windows": [
       {
