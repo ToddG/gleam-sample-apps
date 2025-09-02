@@ -10,12 +10,12 @@
     "tauri": "tauri"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
-  },
-  "dependencies": {
+    "@tauri-apps/cli": "^2",
     "tailwindcss": "^4.1.12",
     "typescript": "^5.9.2",
     "vite": "^7.1.4",
     "vite-gleam": "^0.4.3"
+  },
+  "dependencies": {
   }
 }
