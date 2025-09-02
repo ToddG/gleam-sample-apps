@@ -1,0 +1,226 @@
+These are my notes as I was trying to figure out how to get this
+integration to work. They are probably not going to be useful 
+to anyone but me.
+
+-Toddg
+
+# apple
+
+See: https://tauri.app/start/create-project/
+
+## tauri
+
+    pnpm create tauri-app
+    # app name is apple
+
+    cd apple
+    pnpm install
+    # pnpm tauri android init
+    pnpm tauri dev
+
+    # initial git commit
+
+
+## lustre
+
+    gleam new web
+    cd web
+    gleam add lustre
+
+
+## vite
+
+    pnpm create vite
+    // name is vite-project
+
+    cd vite-project/
+    pnpm install
+    pnpm approve-builds
+    // enable esbuild 
+
+    pnpm run dev
+    find . | egrep -v node_modules
+
+    cat package.json
+    pnpm run <enter>
+    // displays the targets in package.json
+
+        /*
+          "scripts": {
+            "dev": "vite",
+            "build": "vite build",
+            "preview": "vite preview"
+          },
+        */
+
+    // here are the available scripts
+        /*
+        Scripts available in vite-project@0.0.0 via `npm run`:
+      dev
+        vite
+      build
+        vite build
+      preview
+        vite preview
+     */
+
+
+    // manually create the vite.config.js
+
+        export default {
+          // config options
+        }
+
+
+## take1
+
+https://v2.tauri.app/start/prerequisites/
+https://v2.tauri.app/start/create-project/
+
+    cd playing
+    pnpm create tauri-app
+    # app name is take1
+
+        toddg@system76:/media/toddg/data1/repos/personal/gleam/playing$ pnpm create tauri-app
+        ✔ Project name · take1
+        ✔ Identifier · com.toddg.take1
+        ✔ Choose which language to use for your frontend · TypeScript / JavaScript - (pnpm, yarn, npm, deno, bun)
+        ✔ Choose your package manager · pnpm
+        ✔ Choose your UI template · Vanilla
+        ✔ Choose your UI flavor · JavaScript
+
+        toddg@system76:/media/toddg/data1/repos/personal/gleam/playing/take1$ find . | egrep -v icons
+        .
+        ./.gitignore
+        ./.vscode
+        ./.vscode/extensions.json
+        ./README.md
+        ./package.json
+        ./src
+        ./src/assets
+        ./src/assets/tauri.svg
+        ./src/assets/javascript.svg
+        ./src/styles.css
+        ./src/main.js
+        ./src/index.html
+        ./src-tauri
+        ./src-tauri/Cargo.toml
+        ./src-tauri/.gitignore
+        ./src-tauri/build.rs
+        ./src-tauri/tauri.conf.json
+        ./src-tauri/capabilities
+        ./src-tauri/capabilities/default.json
+        ./src-tauri/src
+        ./src-tauri/src/main.rs
+        ./src-tauri/src/lib.rs
+
+
+
+        //./src-tauri/tauri.conf.json
+        {
+          "$schema": "https://schema.tauri.app/config/2",
+          "productName": "take1",
+          "version": "0.1.0",
+          "identifier": "com.toddg.take1",
+          "build": {
+            "frontendDist": "../src"
+          },
+          "app": {
+            "withGlobalTauri": true,
+            "windows": [
+              {
+                "title": "take1",
+                "width": 800,
+                "height": 600
+              }
+            ],
+            "security": {
+              "csp": null
+            }
+          },
+          "bundle": {
+            "active": true,
+            "targets": "all",
+            "icon": [
+              "icons/32x32.png",
+              "icons/128x128.png",
+              "icons/128x128@2x.png",
+              "icons/icon.icns",
+              "icons/icon.ico"
+            ]
+          }
+        }
+
+        // package.json
+        {
+          "name": "take1",
+          "private": true,
+          "version": "0.1.0",
+          "type": "module",
+          "scripts": {
+            "tauri": "tauri"
+          },
+          "devDependencies": {
+            "@tauri-apps/cli": "^2"
+          }
+        }
+
+
+    cd take1
+    pnpm install
+    pnpm tauri dev
+
+// so the project builds and launches a local app (hosted browser) and running web stuff
+// https://v2.tauri.app/start/frontend/vite/
+
+verify vite configuration
+
+* Use ../dist as frontendDist in src-tauri/tauri.conf.json
+
+    // change from ../src to ../dist
+
+* update package.json
+
+    // change this
+
+          "scripts": {
+            "tauri": "tauri"
+          },
+
+
+    // to this
+
+      "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview",
+        "tauri": "tauri"
+      }
+
+* update src-tauri/tauri.conf.json
+
+    // from this
+
+      "build": {
+        "frontendDist": "../dist"
+      },
+
+
+    // to this
+
+      "build": {
+        "beforeDevCommand": "pnpm dev",
+        "beforeBuildCommand": "pnpm build",
+        "devUrl": "http://localhost:5173",
+        "frontendDist": "../dist"
+      }
+
+
+* https://v2.tauri.app/start/frontend/vite/#update-vite-configuration
+
+// create this file, copy from the link above as it does not exist yet
+// copy it to the root directory, as mentioned here: https://vite.dev/config/
+
+
+
+
