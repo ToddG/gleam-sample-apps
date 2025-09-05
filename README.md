@@ -1,5 +1,15 @@
 # How to configure Gleam + Lustre + Vite + Vite-Gleam + Tauri apps
 
+## quickstart
+
+```
+brew install mise
+mise install
+cd simple
+pnpm install
+pnpm tauri dev
+```
+
 ## simple instructions/example in ./simple
 
 ![simple](./images/simple-thumb.jpg)
