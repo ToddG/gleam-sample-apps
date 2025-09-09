@@ -1,0 +1,9 @@
+html,
+body {
+  margin: 0;
+}
+
+#mapleaflet {
+  width: 100vw;
+  height: 100vh;
+}
