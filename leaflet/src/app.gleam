@@ -1,6 +1,7 @@
 // IMPORTS ---------------------------------------------------------------------
 
 import gleam/int
+import gleam/float
 import gleam/string
 import leaflet_ffi
 import logger_ffi as logger
@@ -26,7 +27,7 @@ const pico_css_url = "https://picocss.com"
 pub fn main() {
   logger.debug("application starting...")
   let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(_) = lustre.start(app, "#app", "starting")
   Nil
 }
 
@@ -39,22 +40,43 @@ type CurrentPage {
   MapPage
 }
 
+pub type Coordinates {
+  Coordinates(x: Float, y: Float)
+}
+
+pub type MapControl01Selection {
+  MCCircle
+  MCPolygon
+  MCMarker
+  MCPopup
+  MCNone
+}
+
 type Model {
-  Model(counter: Int, page: CurrentPage)
+  Model(counter: Int, page: CurrentPage, map_control_01: MapControl01Selection, coordinates: Coordinates)
 }
 
 /// The `init` function gets called when we first start our app. It sets the
 /// initial state of the app.
 ///
-fn init(_) -> #(Model, Effect(msg)) {
+fn init(state) -> #(Model, Effect(Msg)) {
+  logger.debug("init method, initial state (ignored) = " <> state)
   let effect = setup_map()
-  #(Model(0, MapPage), effect)
+  logger.debug("init method, initial state (ignored) = " <> state)
+  #(Model(0, MapPage, MCNone, Coordinates(51.505, -0.09)), effect)
 }
 
-fn setup_map() {
-  use _, _ <- effect.before_paint
+fn setup_map(){
+  use dispatch, _shadow_root <- effect.before_paint
   logger.debug("setup leaflet map")
-  leaflet_ffi.new_map("mapleaflet")
+
+  let map_clicked_callback = fn(lat: Float, lng: Float){
+    logger.debug("map click at lat: " <> float.to_string(lat) <> ", lng: " <> float.to_string(lng))
+    dispatch(MapClicked(Coordinates(lat, lng)))
+  }
+
+  let _map = leaflet_ffi.new_map("mapleaflet", map_clicked_callback)
+
   Nil
 }
 
@@ -63,11 +85,13 @@ fn setup_map() {
 /// The `Msg` type describes all the ways the outside world can talk to our app.
 /// That includes user input, network requests, and any other external events.
 ///
-type Msg {
+pub type Msg {
   UserSelectedIncrement
   UserSelectedDecrement
   UserSelectedDemoPage
   UserSelectedMapPage
+  MapControl01(selection: MapControl01Selection)
+  MapClicked(coordinates: Coordinates)
 }
 
 /// The `update` function is called every time we receive a message from the
@@ -86,6 +110,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(msg)) {
     )
     UserSelectedDemoPage -> #(Model(..model, page: DemoPage), effect.none())
     UserSelectedMapPage -> #(Model(..model, page: MapPage), effect.none())
+    MapControl01(selection) -> #(
+      Model(..model, map_control_01: selection),
+      effect.none(),
+    )
+    MapClicked(coordinates) -> #(Model(..model, coordinates: coordinates), effect.none())
   }
   logger.debug(
     "update: msg="
@@ -114,6 +143,7 @@ fn html_footer() -> Element(Msg) {
 fn html_main(model: Model) -> Element(Msg) {
   html.main([attribute.id("app-main"), attribute.class("container-fluid")], [
     html_demo_section(model),
+    html_controls_section(model),
     html_map_section(model),
   ])
 }
@@ -131,28 +161,86 @@ fn html_navbar() -> Element(Msg) {
   ])
 }
 
-fn html_map_section(model: Model) -> Element(Msg) {
+fn html_controls_section(model: Model) -> Element(Msg) {
   case model.page {
     MapPage -> {
-      html.section([attribute.id("map-section"), attribute.style("display", "block")], [
-        leaflet_map_div()
-      ])
+      html.section(
+        [
+          attribute.id("map-controls-section"),
+          attribute.style("display", "inline"),
+        ],
+        [
+          html.details([attribute.name("control")], [
+            html.summary([], [html.p([], [html.text("Map Controls")])]),
+            html_map_controls_form(model),
+          ]),
+        ],
+      )
     }
     _ -> {
-      html.section([attribute.id("map-section"), attribute.style("display", "none")], [
-        leaflet_map_div()
-      ])
+      html.section(
+        [
+          attribute.id("map-controls-section"),
+          attribute.style("display", "none"),
+        ],
+        [
+          html.p([], [html.text("todo : add other controls here")]),
+        ],
+      )
     }
   }
 }
 
+fn html_map_section(model: Model) -> Element(Msg) {
+  case model.page {
+    MapPage -> {
+      html.section(
+        [attribute.id("map-section"), attribute.style("display", "inline")],
+        [leaflet_map_div()],
+      )
+    }
+    _ -> {
+      html.section(
+        [attribute.id("map-section"), attribute.style("display", "none")],
+        [leaflet_map_div()],
+      )
+    }
+  }
+}
+
+fn html_map_controls_form(model: Model) -> Element(Msg) {
+  html.form([], [html.fieldset([], [html_map_controls(model)])])
+}
+
+fn html_map_controls(_model: Model) -> Element(Msg) {
+  html.select(
+    [
+      attribute.id("map-control-01"),
+      attribute.name("select"),
+      attribute.aria_label("select"),
+      attribute.required(True),
+      event.on_change(fn(selection) {
+        case selection {
+          "circle" -> MapControl01(MCCircle)
+          "polygon" -> MapControl01(MCPolygon)
+          "marker" -> MapControl01(MCMarker)
+          "popup" -> MapControl01(MCPopup)
+          _ -> MapControl01(MCNone)
+        }
+      }),
+    ],
+    [
+      html.option([attribute.selected(False), attribute.value("")], "select"),
+      html.option([], "circle"),
+      html.option([], "polygon"),
+      html.option([], "marker"),
+      html.option([], "popup"),
+    ],
+  )
+}
+
 fn leaflet_map_div() -> Element(Msg) {
-    element.unsafe_raw_html(
-      "",
-      "div",
-      [attribute.id("mapleaflet")],
-      "",
-    )
+  element.unsafe_raw_html("", "div", [attribute.id("mapleaflet")], "")
 }
 
 fn html_demo_section(model: Model) -> Element(Msg) {

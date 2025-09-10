@@ -4,6 +4,8 @@ body {
 }
 
 #mapleaflet {
-  width: 100vw;
-  height: 100vh;
+    display: flex; /* Make the container a flexbox */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    height: 65vh;
 }
