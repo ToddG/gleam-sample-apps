@@ -1,0 +1,11 @@
+[env]
+
+[tasks.be-run]
+env = { ERL_AFLAGS = "-sname foo@localhost -setcookie mycookie" }
+description="run gleam backend"
+run = "gleam run"
+
+[tasks.be-observer]
+env = { ERL_AFLAGS = "-sname bar@localhost -setcookie mycookie" }
+description="run erlang shell, run observer.start()"
+run = "erl"
