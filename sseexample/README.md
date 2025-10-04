@@ -1,22 +1,41 @@
 # sseexample
 
-[![Package Version](https://img.shields.io/hexpm/v/sseexample)](https://hex.pm/packages/sseexample)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/sseexample/)
+## design
 
-```sh
-gleam add sseexample@1
-```
-```gleam
-import sseexample
+### entities
 
-pub fn main() -> Nil {
-  // TODO: An example of the project in use
-}
-```
+* app: application
+* sup: root supervisor
+* srp: supervised repeater
+* srg: supervised registry
+* web: mist webserver
+* sse: server side events
 
-Further documentation can be found at <https://hexdocs.pm/sseexample>.
+### events
 
-## Development
+* rt: repeater-trigger-heartbeat
+* rs: repeater-shutdown
+* sh: sse-heartbeat
+* ss: sse-shutdown
+
+### structure
+
+    app
+        sup
+            srp
+            srg
+            web
+                [sse (1 for each http connection), ]
+
+### message flow
+
+    app -> startup -> create sup -> add [srp, srg, web]
+    ... time passes ...
+    srp -> send [repeater-trigger-heartbeat]
+    srp -> receive [repeater-trigger-heartbeat] -> send [sse-heartbeat] to each member of group registry
+    sse -> receive [sse-heartbeat] -> send mist event too http connection
+
+## development
 
 ```sh
 gleam run   # Run the project

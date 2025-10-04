@@ -26,6 +26,8 @@ const group_registry_name = "group_registry"
 
 const registry_topic_heartbeats = "heartbeats"
 
+const repeater_process = "repeater"
+
 // ------------------------------------------------------------------
 // main
 // ------------------------------------------------------------------
@@ -45,7 +47,10 @@ fn start_supervisor() {
   // ------------------------------------------------------------------
   // global names
   // ------------------------------------------------------------------
-  let app_registry = process.new_name(group_registry_name)
+  let sse_app_registry_name: process.Name(group_registry.Message(SseMsg)) =
+    process.new_name(group_registry_name)
+  let repeater_process_name: process.Name(RepeaterMsg) =
+    process.new_name(repeater_process)
 
   // ------------------------------------------------------------------
   // web server
@@ -63,7 +68,7 @@ fn start_supervisor() {
           mist.server_sent_events(
             request: req,
             initial_response: http_response.new(200),
-            init: sse_init(app_registry, _),
+            init: sse_init(sse_app_registry_name, _),
             loop: sse_loop,
           )
       }
@@ -81,8 +86,8 @@ fn start_supervisor() {
   // restart the db
   sup.new(sup.RestForOne)
   |> sup.add(webserver_child_spec)
-  |> sup.add(group_registry.supervised(app_registry))
-  |> sup.add(supervised_repeater(app_registry))
+  |> sup.add(group_registry.supervised(sse_app_registry_name))
+  |> sup.add(supervised_repeater(sse_app_registry_name, repeater_process_name))
   |> sup.start
 }
 
@@ -97,61 +102,59 @@ pub type HeartbeatState {
   )
 }
 
-pub type RegistryMsg {
+pub type RepeaterMsg {
   RepeaterTriggerHeartbeat
   RepeaterShutdown
-  SSEHeartbeat
 }
 
 fn supervised_repeater(
-  reg_name: process.Name(group_registry.Message(RegistryMsg)),
-) -> supervision.ChildSpecification(process.Subject(RegistryMsg)) {
+  reg_name: process.Name(group_registry.Message(SseMsg)),
+  repeater_process_name: process.Name(RepeaterMsg),
+) -> supervision.ChildSpecification(process.Subject(RepeaterMsg)) {
   let registry = group_registry.get_registry(reg_name)
   supervision.worker(fn() {
     actor.new_with_initialiser(500, fn(subject) {
       let pid = process.self()
-      let group_reg =
-        group_registry.join(registry, registry_topic_heartbeats, pid)
+      let _ = process.register(pid, repeater_process_name)
+      let _ = group_registry.join(registry, registry_topic_heartbeats, pid)
       let repeater =
         repeatedly.call(trigger_interval, Nil, fn(_state, _i) {
-          logging.log(logging.Debug, "repeater-process-send-trigger-heartbeat-message")
-          process.send(group_reg, RepeaterTriggerHeartbeat)
+          logging.log(
+            logging.Debug,
+            "repeater-process-send-repeater-trigger-heartbeat",
+          )
+          process.send(subject, RepeaterTriggerHeartbeat)
         })
-      let selector =
-        process.new_selector()
-        |> process.select(group_reg)
       HeartbeatState(repeater:, count: 0, xuid: uuid.v4())
       |> actor.initialised
       |> actor.returning(subject)
-      |> actor.selecting(selector)
       |> Ok
     })
     |> actor.on_message(fn(state, message) {
       case message {
         RepeaterTriggerHeartbeat -> {
-          logging.log(logging.Debug, "repeater-trigger-heartbeat-message-received")
+          logging.log(
+            logging.Debug,
+            "repeater-process-repeater-trigger-heartbeat-received",
+          )
           // send a message to each registry member
           group_registry.members(registry, registry_topic_heartbeats)
           |> list.each(fn(member) {
-            // TODO: why cannot we send other types, like SseMsg, to the contained processes?
-            // TODO: process.send is limited to just RegistryMsg, what part of the method
-            // TODO: signature is limiting this?
             // process.send(member, HeartbeatMessage(tag: "heartbeat", xuid: state.xuid))
-            logging.log(logging.Debug, "repeater-process-send-member-sse-heartbeat")
+            logging.log(
+              logging.Debug,
+              "repeater-process-send-member-sse-heartbeat",
+            )
             process.send(member, SSEHeartbeat)
           })
           actor.continue(HeartbeatState(..state, count: state.count + 1))
         }
         RepeaterShutdown -> {
-          logging.log(logging.Error, "repeater-shutdown-message-received")
+          logging.log(logging.Error, "repeater-process-repeater-shutdown-received")
           // send a message to each registry member
           group_registry.members(registry, registry_topic_heartbeats)
-          |> list.each(fn(member) { process.send(member, RepeaterShutdown) })
+          |> list.each(fn(member) { process.send(member, SSEShutdown) })
           repeatedly.stop(state.repeater)
-          actor.continue(state)
-        }
-        SSEHeartbeat -> {
-          logging.log(logging.Error, "repeater-sse-heartbeat-message-received")
           actor.continue(state)
         }
       }
@@ -164,36 +167,39 @@ fn supervised_repeater(
 // server side events
 // ------------------------------------------------------------------
 pub type SseMsg {
-  HeartbeatMessage(tag: String, xuid: uuid.Uuid)
+  SSEHeartbeat
+  SSEShutdown
 }
 
 pub type EventState {
-  EventState(count: Int, sse_id: uuid.Uuid)
+  EventState(count: Int, sse_id: uuid.Uuid, error_count: Int)
 }
 
 fn sse_init(
-  reg_name: process.Name(group_registry.Message(RegistryMsg)),
-  subj: process.Subject(RegistryMsg),
+  reg_name: process.Name(group_registry.Message(SseMsg)),
+  subject: process.Subject(SseMsg),
 ) {
+  logging.log(logging.Debug, "sse-init")
   let sse_id = uuid.v4()
   let registry = group_registry.get_registry(reg_name)
-  let assert Ok(owner) = process.subject_owner(subj)
-  let group_reg =
-    group_registry.join(registry, registry_topic_heartbeats, owner)
+  let pid = process.self()
+  let group_registry_subject =
+    group_registry.join(registry, registry_topic_heartbeats, pid)
   let selector =
     process.new_selector()
-    |> process.select(group_reg)
-  actor.initialised(EventState(count: 0, sse_id:))
-  |> actor.returning(subj)
+    |> process.select(group_registry_subject)
+  logging.log(logging.Debug, "sse-init-configure-selector")
+  actor.initialised(EventState(count: 0, sse_id:, error_count: 0))
+  |> actor.returning(subject)
   |> actor.selecting(selector)
   |> Ok
 }
 
 fn sse_loop(
   state: EventState,
-  message: RegistryMsg,
+  message: SseMsg,
   conn: mist.SSEConnection,
-) -> actor.Next(EventState, RegistryMsg) {
+) -> actor.Next(EventState, SseMsg) {
   case message {
     SSEHeartbeat -> {
       logging.log(logging.Debug, "sse-loop-sse-heartbeat-message-received")
@@ -203,22 +209,27 @@ fn sse_loop(
         |> mist.event_name("heartbeat")
       case mist.send_event(conn, event) {
         Ok(_) -> {
-          logging.log(logging.Debug, "sse-loop-sse-heartbeat-message-mist-send-ok")
+          logging.log(
+            logging.Debug,
+            "sse-loop-sse-heartbeat-message-mist-send-ok",
+          )
           actor.continue(EventState(..state, count: state.count + 1))
         }
         Error(_) -> {
-          logging.log(logging.Error, "sse-loop-sse-heartbeat-message-mist-send-error")
-          actor.stop()
+          logging.log(
+            logging.Error,
+            "sse-loop-sse-heartbeat-message-mist-send-error",
+          )
+          actor.continue(EventState(..state, count: state.error_count + 1))
         }
       }
     }
-    RepeaterShutdown -> {
-      logging.log(logging.Debug, "sse-loop-shutdown-message-received")
+    SSEShutdown -> {
+      logging.log(
+        logging.Error,
+        "sse-loop-sse-shutdown-message-mist-send-error",
+      )
       actor.stop()
-    }
-    RepeaterTriggerHeartbeat -> {
-      logging.log(logging.Error, "sse-loop-repeater-trigger-heartbeat-received")
-      actor.continue(state)
     }
   }
 }
