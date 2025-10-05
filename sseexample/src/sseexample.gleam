@@ -332,9 +332,17 @@ conn: mist.SSEConnection,
         Error(_) -> {
           logging.log(
           logging.Error,
-          "sse-loop-sse-heartbeat-message-mist-send-error",
+          "sse-loop-sse-heartbeat-message-mist-send-error-closing-connection",
           )
-          actor.continue(EventState(..state, count: state.error_count + 1))
+          // since the connection is restarted by the client, let's close the connection
+          // on error here. this way, when the user closes their tab or browser, we
+          // don't keep the connection open and fill the server logs with useless
+          // error messages.
+          //
+          // https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#closing_event_streams
+          // '''By default, if the connection between the client and server closes, the connection is restarted.'''
+          //
+          actor.stop()
         }
       }
 //      // EXAMPLE 2  (NOT WORKING)
