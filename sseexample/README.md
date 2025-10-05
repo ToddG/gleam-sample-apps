@@ -41,3 +41,7 @@
 gleam run   # Run the project
 gleam test  # Run the tests
 ```
+
+## links
+* https://github.com/rawhat/mist/blob/master/examples/eventz/src/eventz.gleam
+* https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
