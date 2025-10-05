@@ -27,8 +27,6 @@ const group_registry_name = "group_registry"
 
 const registry_topic_heartbeats = "heartbeats"
 
-const repeater_process = "repeater"
-
 // ------------------------------------------------------------------
 // html
 // ------------------------------------------------------------------
@@ -38,7 +36,7 @@ const index_html = "
     <head><title>basic server sent event</title></head>
     <ul>
     <li><a href=\"/example1\">example1 : event.onmessage(0</a></li>
-    <li><a href=\"/example2\">example2 : event.addEventListener()</a></li>
+    <li><a href=\"/example2\">example2 : event.addEventListener() !!! NOT WORKING !!!</a></li>
     <li><a href=\"/heartbeat\">heartbeat</a></li>
     </ul>
     <body>
@@ -75,34 +73,34 @@ const example_html_1 = "
   </html>
   "
 
-const example_html_2 = "
-  <!DOCTYPE html>
-  <html lang=\"en\">
-    <head><title>basic server sent event #2</title></head>
-    <body>
-    <p>Event source /heartbeat</p>
-    <p>Listening for custom message (so mist.event_name IS SET here!)</p>
-    <div id='time'></div>
-      <script>
-        const clock = document.getElementById(\"time\")
-        const eventz = new EventSource(\"/heartbeat\")
-        eventz.addEventListener(\"heartbeat\", (e) => {
-          console.log(\"got a message\", e)
-          const theTime = new Date(parseInt(e.data))
-          clock.innerText = theTime.toLocaleString()
-        }
-        eventz.onclose = () => {
-          clock.innerText = \"Done!\"
-        }
-        // This is not 'ideal' but there is no way to close the connection from
-        // the server :(
-        eventz.onerror = (e) => {
-          eventz.close()
-        }
-      </script>
-    </body>
-  </html>
-  "
+//const example_html_2 = "
+//  <!DOCTYPE html>
+//  <html lang=\"en\">
+//    <head><title>basic server sent event #2</title></head>
+//    <body>
+//    <p>Event source /heartbeat</p>
+//    <p>Listening for custom message (so mist.event_name IS SET here!)</p>
+//    <div id='time'></div>
+//      <script>
+//        const clock = document.getElementById(\"time\")
+//        const eventz = new EventSource(\"/heartbeat\")
+//        eventz.addEventListener(\"heartbeat\", (e) => {
+//          console.log(\"got a message\", e)
+//          const theTime = new Date(parseInt(e.data))
+//          clock.innerText = theTime.toLocaleString()
+//        }
+//        eventz.onclose = () => {
+//          clock.innerText = \"Done!\"
+//        }
+//        // This is not 'ideal' but there is no way to close the connection from
+//        // the server :(
+//        eventz.onerror = (e) => {
+//          eventz.close()
+//        }
+//      </script>
+//    </body>
+//  </html>
+//  "
 
 // ------------------------------------------------------------------
 // main
@@ -125,8 +123,6 @@ fn start_supervisor() {
   // ------------------------------------------------------------------
   let sse_app_registry_name: process.Name(group_registry.Message(SseMsg)) =
   process.new_name(group_registry_name)
-  let repeater_process_name: process.Name(RepeaterMsg) =
-  process.new_name(repeater_process)
 
   // ------------------------------------------------------------------
   // web server
@@ -139,9 +135,9 @@ fn start_supervisor() {
   http_response.new(200)
   |> http_response.set_body(mist.Bytes(bytes_tree.from_string(example_html_1)))
 
-  let example_resp_2 =
-  http_response.new(200)
-  |> http_response.set_body(mist.Bytes(bytes_tree.from_string(example_html_2)))
+//  let example_resp_2 =
+//  http_response.new(200)
+//  |> http_response.set_body(mist.Bytes(bytes_tree.from_string(example_html_2)))
 
   let webserver_child_spec =
   fn(req: http_request.Request(mist.Connection)) -> http_response.Response(
@@ -160,7 +156,7 @@ fn start_supervisor() {
       loop: sse_loop,
       )
       ["example1"] -> example_resp_1
-      ["example2"] -> example_resp_2
+//      ["example2"] -> example_resp_2
       _ -> index_resp
     }
   }
@@ -178,7 +174,7 @@ fn start_supervisor() {
   sup.new(sup.RestForOne)
   |> sup.add(webserver_child_spec)
   |> sup.add(group_registry.supervised(sse_app_registry_name))
-  |> sup.add(supervised_repeater(sse_app_registry_name, repeater_process_name))
+  |> sup.add(supervised_repeater(sse_app_registry_name))
   |> sup.start
 }
 
@@ -200,14 +196,10 @@ pub type RepeaterMsg {
 
 fn supervised_repeater(
 reg_name: process.Name(group_registry.Message(SseMsg)),
-repeater_process_name: process.Name(RepeaterMsg),
 ) -> supervision.ChildSpecification(process.Subject(RepeaterMsg)) {
   let registry = group_registry.get_registry(reg_name)
   supervision.worker(fn() {
     actor.new_with_initialiser(500, fn(subject) {
-      let pid = process.self()
-      let _ = process.register(pid, repeater_process_name)
-      let _ = group_registry.join(registry, registry_topic_heartbeats, pid)
       let repeater =
       repeatedly.call(trigger_interval, Nil, fn(_state, _i) {
         logging.log(
@@ -345,31 +337,31 @@ conn: mist.SSEConnection,
           actor.continue(EventState(..state, count: state.error_count + 1))
         }
       }
-      // EXAMPLE 2
-      // ------------------------------------------------------------------
-      // this event send will only succeed for /index2 b/c that html snippet
-      // is listening for a custom event via `addEventListener`
-      // ------------------------------------------------------------------
-      let event =
-      mist.event(string_tree.from_string(int.to_string(value)))
-      |> mist.event_id(state.count |> int.to_string)
-      |> mist.event_name("heartbeat")
-      case mist.send_event(conn, event) {
-        Ok(_) -> {
-          logging.log(
-          logging.Debug,
-          "sse-loop-sse-heartbeat-message-mist-send-ok",
-          )
-          actor.continue(EventState(..state, count: state.count + 1))
-        }
-        Error(_) -> {
-          logging.log(
-          logging.Error,
-          "sse-loop-sse-heartbeat-message-mist-send-error",
-          )
-          actor.continue(EventState(..state, count: state.error_count + 1))
-        }
-      }
+//      // EXAMPLE 2  (NOT WORKING)
+//      // ------------------------------------------------------------------
+//      // this event send will only succeed for /index2 b/c that html snippet
+//      // is listening for a custom event via `addEventListener`
+//      // ------------------------------------------------------------------
+//      let event =
+//      mist.event(string_tree.from_string(int.to_string(value)))
+//      |> mist.event_id(state.count |> int.to_string)
+//      |> mist.event_name("heartbeat")
+//      case mist.send_event(conn, event) {
+//        Ok(_) -> {
+//          logging.log(
+//          logging.Debug,
+//          "sse-loop-sse-heartbeat-message-mist-send-ok",
+//          )
+//          actor.continue(EventState(..state, count: state.count + 1))
+//        }
+//        Error(_) -> {
+//          logging.log(
+//          logging.Error,
+//          "sse-loop-sse-heartbeat-message-mist-send-error",
+//          )
+//          actor.continue(EventState(..state, count: state.error_count + 1))
+//        }
+//      }
     }
     SSEShutdown -> {
       logging.log(
