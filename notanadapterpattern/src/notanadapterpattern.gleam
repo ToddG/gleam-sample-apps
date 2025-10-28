@@ -9,22 +9,22 @@ import gleam/string
 pub fn main() -> Nil {
   logging.configure()
   logging.log(logging.Info, "Hello from notanadapterpattern!")
-  let foo_config: Config(Foo) =
+  let foo_config: Config =
     Config(
       source_path: SourcePath("./source/foo/abc.input"),
       target_path: TargetPath("./target/foo/abc.output"),
       url: Url("https://some/foo/out/there.abc"),
       s3config: None,
-      parse_func: parse_foo
+      name: "foo"
     )
 
-  let bar_config: Config(Bar) =
+  let bar_config: Config =
     Config(
       source_path: SourcePath("./source/bar/abc.input"),
       target_path: TargetPath("./target/bar/abc.output"),
       url: Url("https://some/bar/out/there.abc"),
       s3config: None,
-      parse_func: parse_bar
+      name: "bar"
     )
   let _ = process(foo_config)
   let _ = process(bar_config)
@@ -34,27 +34,31 @@ pub fn main() -> Nil {
 // ------------------------------------------------------------------
 // external data feed types that this generic scraper supports
 // ------------------------------------------------------------------
-// external json looks like this: {"a": 123}
-pub type Foo {
-  Foo(Int)
+// external json feed is consumed as data
+pub type Data{
+  // external json looks like this: {"a": 123}
+  FooData(String)
+  // external json looks like this: {"b": "abc"}
+  BarData(String)
 }
 
-// external json looks like this: {"b": "abc"}
-pub type Bar {
-  Bar(String)
+// data is parsed into a schema
+pub type Schema{
+  FooSchema(Int)
+  BarSchema(String)
 }
 
 // ------------------------------------------------------------------
 // errors
 // ------------------------------------------------------------------
-pub type ScraperError(t) {
-  ConfigError(config: Config(t), error: String)
-  DownloadError(config: Config(t), error: String)
-  FileWriterError(config: Config(t), error: String)
-  FileReaderError(config: Config(t), error: String)
-  FileArchiverError(config: Config(t), error: String)
-  ParseError(config: Config(t), error: List(String))
-  DatabaseError(config: Config(t), error: String)
+pub type ScraperError {
+  ConfigError(config: Config, error: String)
+  DownloadError(config: Config, error: String)
+  FileWriterError(config: Config, error: String)
+  FileReaderError(config: Config, error: String)
+  FileArchiverError(config: Config, error: String)
+  ParseError(config: Config, error: List(String))
+  DatabaseError(config: Config, error: String)
 }
 
 // ------------------------------------------------------------------
@@ -80,10 +84,6 @@ pub type DatabaseTableName{
   DatabaseTableName(String)
 }
 
-pub type Data{
-  Data(String)
-}
-
 pub type SourcePath{
   SourcePath(String)
 }
@@ -100,13 +100,14 @@ pub type Url{
   Url(String)
 }
 
-pub type Config(t) {
+pub type Config {
   Config(
+    name: String,
     source_path: SourcePath,
     target_path: TargetPath,
     url: Url,
     s3config: Option(S3Config),
-    parse_func: fn(Data, Config(t)) -> Result(#(t, Config(t)), ScraperError(t)))
+  )
 }
 
 // ------------------------------------------------------------------
@@ -122,7 +123,7 @@ pub type Config(t) {
 // * delete the local temp file
 // * emit whatever metrics might be useful
 // ------------------------------------------------------------------
-pub fn process(config: Config(t)) -> Nil {
+pub fn process(config: Config) -> Nil {
   let _ = validate_config(config)
   |> result.try(download_resource)
   |> result.try(save_resource_to_temporary_file)
@@ -134,21 +135,21 @@ pub fn process(config: Config(t)) -> Nil {
   Nil
 }
 
-fn emit_metrics(value: #(t, Config(t))) -> Result(#(t, Config(t)), ScraperError(t)) {
+fn emit_metrics(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   // TODO: emit metrics
   let #(data, config) = value
   logging.log(logging.Info, "TODO: emit metrics, config=" <> string.inspect(config))
   Ok(#(data, config))
 }
 
-fn delete_temp_file(value: #(t, Config(t))) -> Result(#(t, Config(t)), ScraperError(t)) {
+fn delete_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   // TODO: delete temp file
   let #(data, config) = value
   logging.log(logging.Info, "TODO: delete temp file, config=" <> string.inspect(config))
   Ok(#(data, config))
 }
 
-fn archive_temp_file(value: #(t, Config(t))) -> Result(#(t, Config(t)), ScraperError(t)) {
+fn archive_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   // TODO: archive temp file
   let #(data, config) = value
   logging.log(logging.Info, "TODO: archive temp file, config=" <> string.inspect(config))
@@ -156,36 +157,39 @@ fn archive_temp_file(value: #(t, Config(t))) -> Result(#(t, Config(t)), ScraperE
 }
 
 
-fn load_file_into_database(value: #(t, Config(t))) -> Result(#(t, Config(t)), ScraperError(t)) {
+fn load_file_into_database(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   // TODO: load file into db
   let #(data, config) = value
   logging.log(logging.Info, "TODO: load file into db, config=" <> string.inspect(config))
   Ok(#(data, config))
 }
 
-fn parse_foo(_data: Data, config: Config(Foo)) -> Result(#(Foo, Config(Foo)), ScraperError(Foo))
+fn parse_foo(_data: Data, config: Config) -> Result(#(Schema, Config), ScraperError)
 {
   // TODO: parse data into the foo type constructor
   logging.log(logging.Info, "TODO: parse data into the foo type constructor, config=" <> string.inspect(config))
-  Ok(#(Foo(0), config))
+  Ok(#(FooSchema(0), config))
 }
 
-fn parse_bar(_data: Data, config: Config(Bar)) -> Result(#(Bar, Config(Bar)), ScraperError(Bar))
+fn parse_bar(_data: Data, config: Config) -> Result(#(Schema, Config), ScraperError)
 {
   // TODO: parse data into the bar type constructor
   logging.log(logging.Info, "TODO: parse data into the bar type constructor, config=" <> string.inspect(config))
-  Ok(#(Bar("testtest"), config))
+  Ok(#(BarSchema("testtest"), config))
 }
 
 
-fn parse_data(value: #(Data, Config(t))) -> Result(#(t, Config(t)), ScraperError(t)) {
+fn parse_data(value: #(Data, Config)) -> Result(#(Schema, Config), ScraperError) {
   let #(data, config) = value
-  config.parse_func(data, config)
+  case data {
+    FooData(_) -> parse_foo(data, config)
+    BarData(_) -> parse_bar(data, config)
+  }
 }
 
 fn save_resource_to_temporary_file(
-  value: #(Data, Config(t)),
-) -> Result(#(Data, Config(t)), ScraperError(t)) {
+  value: #(Data, Config),
+) -> Result(#(Data, Config), ScraperError) {
   let #(data, config) = value
   // TODO: save data to temporary file
   logging.log(logging.Info, "TODO: save resource to temp file, config=" <> string.inspect(config))
@@ -193,14 +197,20 @@ fn save_resource_to_temporary_file(
 }
 
 fn download_resource(
-  config: Config(t),
-) -> Result(#(Data, Config(t)), ScraperError(t)) {
+  config: Config,
+) -> Result(#(Data, Config), ScraperError) {
   // TODO: download resource
   logging.log(logging.Info, "TODO: implement download resources, config=" <> string.inspect(config))
-  Ok(#(Data("some json data"), config))
+  case config.name{
+    "foo" -> Ok(#(FooData("downloaded json data"), config))
+    "bar" -> Ok(#(BarData("downloaded json data"), config))
+    _ -> {
+      Error(DownloadError(config, "unknown config name : TODO: code smell, this shouldn't be needed"))
+    }
+  }
 }
 
-fn validate_config(config: Config(t)) -> Result(Config(t), ScraperError(t)) {
+fn validate_config(config: Config) -> Result(Config, ScraperError) {
   // TODO: verify source files exists
   // TODO: verify target file does not exist
   // TODO: etc.
