@@ -10,21 +10,19 @@ pub fn main() -> Nil {
   logging.configure()
   logging.log(logging.Info, "Hello from notanadapterpattern!")
   let foo_config: Config =
-    Config(
+    FooConfig(
       source_path: SourcePath("./source/foo/abc.input"),
       target_path: TargetPath("./target/foo/abc.output"),
       url: Url("https://some/foo/out/there.abc"),
       s3config: None,
-      name: "foo"
     )
 
   let bar_config: Config =
-    Config(
+    BarConfig(
       source_path: SourcePath("./source/bar/abc.input"),
       target_path: TargetPath("./target/bar/abc.output"),
       url: Url("https://some/bar/out/there.abc"),
       s3config: None,
-      name: "bar"
     )
   let _ = process(foo_config)
   let _ = process(bar_config)
@@ -101,12 +99,17 @@ pub type Url{
 }
 
 pub type Config {
-  Config(
-    name: String,
+  FooConfig(
     source_path: SourcePath,
     target_path: TargetPath,
     url: Url,
     s3config: Option(S3Config),
+  )
+  BarConfig(
+  source_path: SourcePath,
+  target_path: TargetPath,
+  url: Url,
+  s3config: Option(S3Config),
   )
 }
 
@@ -201,12 +204,9 @@ fn download_resource(
 ) -> Result(#(Data, Config), ScraperError) {
   // TODO: download resource
   logging.log(logging.Info, "TODO: implement download resources, config=" <> string.inspect(config))
-  case config.name{
-    "foo" -> Ok(#(FooData("downloaded json data"), config))
-    "bar" -> Ok(#(BarData("downloaded json data"), config))
-    _ -> {
-      Error(DownloadError(config, "unknown config name : TODO: code smell, this shouldn't be needed"))
-    }
+  case config{
+    FooConfig(_,_,_,_) -> Ok(#(FooData("downloaded json data"), config))
+    BarConfig(_,_,_,_) -> Ok(#(BarData("downloaded json data"), config))
   }
 }
 
