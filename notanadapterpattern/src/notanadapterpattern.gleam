@@ -2,6 +2,7 @@ import gleam/option.{type Option, None}
 import gleam/result
 import logging
 import gleam/string
+import gleam/erlang/process
 
 // ------------------------------------------------------------------
 // main
@@ -10,23 +11,25 @@ pub fn main() -> Nil {
   logging.configure()
   logging.log(logging.Info, "Hello from notanadapterpattern!")
   let foo_config: Config =
-    FooConfig(
-      source_path: SourcePath("./source/foo/abc.input"),
-      target_path: TargetPath("./target/foo/abc.output"),
-      url: Url("https://some/foo/out/there.abc"),
+    Config(
+      source: SourceFoo(SourcePath("https://source/foo/abc.input")),
+      temp: TempPath("./temp/foo/abc.input"),
+      archive: ArchivePath("./archive/foo/abc.input"),
       s3config: None,
     )
 
   let bar_config: Config =
-    BarConfig(
-      source_path: SourcePath("./source/bar/abc.input"),
-      target_path: TargetPath("./target/bar/abc.output"),
-      url: Url("https://some/bar/out/there.abc"),
+    Config(
+      source: SourceBar(SourcePath("https://source/bar/def.input")),
+      temp: TempPath("./temp/bar/def.input"),
+      archive: ArchivePath("./archive/bar/def.input"),
       s3config: None,
     )
   let _ = process(foo_config)
   let _ = process(bar_config)
-  Nil
+
+  // sleep so all the logs have a chance
+  process.sleep(1000)
 }
 
 // ------------------------------------------------------------------
@@ -86,9 +89,14 @@ pub type SourcePath{
   SourcePath(String)
 }
 
-pub type TargetPath{
-  TargetPath(String)
+pub type TempPath{
+  TempPath(String)
 }
+
+pub type ArchivePath{
+  ArchivePath(String)
+}
+
 
 pub type S3Config {
   S3Config(unknown: String)
@@ -98,18 +106,17 @@ pub type Url{
   Url(String)
 }
 
+pub type Source {
+  SourceFoo(SourcePath)
+  SourceBar(SourcePath)
+}
+
 pub type Config {
-  FooConfig(
-    source_path: SourcePath,
-    target_path: TargetPath,
-    url: Url,
+  Config(
+    source: Source,
+    temp: TempPath,
+    archive: ArchivePath,
     s3config: Option(S3Config),
-  )
-  BarConfig(
-  source_path: SourcePath,
-  target_path: TargetPath,
-  url: Url,
-  s3config: Option(S3Config),
   )
 }
 
@@ -155,7 +162,7 @@ fn delete_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
 fn archive_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   // TODO: archive temp file
   let #(data, config) = value
-  logging.log(logging.Info, "TODO: archive temp file, config=" <> string.inspect(config))
+  logging.log(logging.Info, "TODO: archive temp file to archive file=" <> string.inspect(config.archive) <> ", config=" <> string.inspect(config))
   Ok(#(data, config))
 }
 
@@ -195,7 +202,7 @@ fn save_resource_to_temporary_file(
 ) -> Result(#(Data, Config), ScraperError) {
   let #(data, config) = value
   // TODO: save data to temporary file
-  logging.log(logging.Info, "TODO: save resource to temp file, config=" <> string.inspect(config))
+  logging.log(logging.Info, "TODO: save resource to temp file=" <> string.inspect(config.temp) <> ", config=" <> string.inspect(config))
   Ok(#(data, config))
 }
 
@@ -204,9 +211,9 @@ fn download_resource(
 ) -> Result(#(Data, Config), ScraperError) {
   // TODO: download resource
   logging.log(logging.Info, "TODO: implement download resources, config=" <> string.inspect(config))
-  case config{
-    FooConfig(_,_,_,_) -> Ok(#(FooData("downloaded json data"), config))
-    BarConfig(_,_,_,_) -> Ok(#(BarData("downloaded json data"), config))
+  case config.source{
+    SourceFoo(SourcePath(path)) -> Ok(#(FooData("downloaded json data from path="<>path), config))
+    SourceBar(SourcePath(path)) -> Ok(#(BarData("downloaded json data from path="<>path), config))
   }
 }
 
