@@ -5,7 +5,8 @@ As part of creating an ETL (extract transform load), I tried to create an adapte
 After [discussion with folks](https://discordapp.com/channels/768594524158427167/1432462826500263976/1432724667067535421),
 I decided this was not the ideal approach.
 
-So I created [not an adapter pattern in gleam](src/etl.gleam). I really like this, and will use this going forward.
+So I created [an etl in gleam](src/etl.gleam) that does NOT use the adapter pattern, but
+instead uses the `|>` pattern in gleam. I really like this, and will use it going forward.
 
 ## Development
 
