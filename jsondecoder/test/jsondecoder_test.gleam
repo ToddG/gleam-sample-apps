@@ -1,10 +1,10 @@
-import gleam/result
 import gleam/dynamic
 import gleam/dynamic/decode.{type Decoder, DecodeError}
 import gleam/int
 import gleam/io
 import gleam/json
 import gleam/list
+import gleam/result
 import gleam/string
 import gleeunit
 import logging
@@ -65,11 +65,11 @@ pub type PositiveInt {
   PositiveInt(Int)
 }
 
-pub fn new_positive_int(val: Int)-> Result(PositiveInt, String){
-  case is_int_positive(val){
+pub fn new_positive_int(val: Int) -> Result(PositiveInt, String) {
+  case is_int_positive(val) {
     True -> Ok(PositiveInt(val))
     False -> Error("Value is not positive: " <> int.to_string(val))
-}
+  }
 }
 
 pub fn is_int_positive(x: Int) -> Bool {
@@ -101,23 +101,25 @@ pub fn positive_int_decoder_test() {
   assert result == Error([DecodeError("PositiveInt", "Int", [])])
 }
 
-
 // ------------------------------------------------------------------
 // decode partially correct data
 // ------------------------------------------------------------------
 fn lenient_list_decoder(elem_decoder: Decoder(a)) -> Decoder(List(a)) {
-  decode.list(decode.one_of(
-    elem_decoder |> decode.map(list.wrap),
-    [decode.success([])]
-  )) |> decode.map(list.flatten)
+  decode.list(
+    decode.one_of(elem_decoder |> decode.map(list.wrap), [decode.success([])]),
+  )
+  |> decode.map(list.flatten)
 }
 
-pub type Feed{
+pub type Feed {
   Feed(data: List(PositiveInt))
 }
 
-pub fn feed_decoder(){
-  use data <- decode.field("data", lenient_list_decoder(positive_int_decoder(logging.Error)))
+pub fn feed_decoder() {
+  use data <- decode.field(
+    "data",
+    lenient_list_decoder(positive_int_decoder(logging.Error)),
+  )
   decode.success(Feed(data:))
 }
 
@@ -134,13 +136,12 @@ const good_feed = "
 pub fn good_feed_decoder_test() {
   let returned = json.parse(from: good_feed, using: feed_decoder())
   let positive_int_list = {
-    [1,2,3]
+    [1, 2, 3]
     |> list.map(PositiveInt)
   }
-  let expected = Feed(data:positive_int_list)
+  let expected = Feed(data: positive_int_list)
   assert returned == Ok(expected)
 }
-
 
 const bad_feed = "
 {
@@ -155,9 +156,9 @@ const bad_feed = "
 pub fn bad_feed_decoder_test() {
   let returned = json.parse(from: bad_feed, using: feed_decoder())
   let positive_int_list = {
-    [1,3]
+    [1, 3]
     |> list.map(PositiveInt)
   }
-  let expected = Feed(data:positive_int_list)
+  let expected = Feed(data: positive_int_list)
   assert returned == Ok(expected)
 }
