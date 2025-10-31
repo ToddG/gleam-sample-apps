@@ -138,10 +138,12 @@ pub fn good_feed_decoder_test() {
   let positive_int_list = {
     [1, 2, 3]
     |> list.map(new_positive_int)
-    |> result.values
+    |> list.filter_map(fn(x){x})
   }
-  let expected = Feed(data: positive_int_list)
-  assert returned == Ok(expected)
+  let expected = Ok(Feed(data: positive_int_list))
+  io.println("expected=" <> string.inspect(expected))
+  io.println("returned=" <> string.inspect(returned))
+  assert returned == expected
 }
 
 const bad_feed = "
