@@ -61,7 +61,7 @@ pub fn decode4_test() {
   }
 }
 
-pub type PositiveInt {
+pub opaque type PositiveInt {
   PositiveInt(Int)
 }
 
@@ -137,7 +137,8 @@ pub fn good_feed_decoder_test() {
   let returned = json.parse(from: good_feed, using: feed_decoder())
   let positive_int_list = {
     [1, 2, 3]
-    |> list.map(PositiveInt)
+    |> list.map(new_positive_int)
+    |> result.values
   }
   let expected = Feed(data: positive_int_list)
   assert returned == Ok(expected)
