@@ -1,4 +1,3 @@
-import gleam/io
 import config.{type Config}
 import error.{type ScraperError}
 import gleam/result
