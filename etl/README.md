@@ -11,7 +11,7 @@ instead uses the `|>` pattern in gleam. I really like this, and will use it goin
 ## Development
 
 ```sh
-gleam run   # Run the project
+gleam test   # test the project
 ```
 
 Outputs:
