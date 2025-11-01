@@ -1,13 +1,10 @@
+import gleam/io
 import config.{type Config}
 import error.{type ScraperError}
-import external.{
-  type Data, type Schema, BarData, BarSchema, BarSourceResource, FooData,
-  FooSchema, FooSourceResource,
-}
 import gleam/result
 import gleam/string
 import logging
-import resource.{SourceResource}
+import resource.{BarSourceResource, FooSourceResource}
 
 // ------------------------------------------------------------------
 // Summary:
@@ -35,12 +32,26 @@ pub fn process(config: Config) -> Nil {
   Nil
 }
 
+// external json feed is consumed as data
+pub type Data {
+  // external json looks like this: {"a": 123}
+  FooData(String)
+  // external json looks like this: {"b": "abc"}
+  BarData(String)
+}
+
+// data is parsed into a schema
+pub type Schema {
+  FooSchema(Int)
+  BarSchema(String)
+}
+
 fn emit_metrics(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   // TODO: emit metrics
   let #(data, config) = value
   logging.log(
     logging.Info,
-    "TODO: emit metrics, config=" <> string.inspect(config),
+    "TODO: emit metrics, config=" <> config.to_string(config),
   )
   Ok(#(data, config))
 }
@@ -50,7 +61,7 @@ fn delete_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   let #(data, config) = value
   logging.log(
     logging.Info,
-    "TODO: delete temp file, config=" <> string.inspect(config),
+    "TODO: delete temp file, config=" <> config.to_string(config),
   )
   Ok(#(data, config))
 }
@@ -60,10 +71,8 @@ fn archive_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) 
   let #(data, config) = value
   logging.log(
     logging.Info,
-    "TODO: archive temp file to archive file="
-      <> string.inspect(config.archive)
-      <> ", config="
-      <> string.inspect(config),
+    "TODO: archive temp file to archive file, config="
+      <> config.to_string(config),
   )
   Ok(#(data, config))
 }
@@ -75,7 +84,7 @@ fn load_file_into_database(
   let #(data, config) = value
   logging.log(
     logging.Info,
-    "TODO: load file into db, config=" <> string.inspect(config),
+    "TODO: load file into db, config=" <> config.to_string(config),
   )
   Ok(#(data, config))
 }
@@ -88,7 +97,7 @@ fn parse_foo(
   logging.log(
     logging.Info,
     "TODO: parse data into the foo type constructor, config="
-      <> string.inspect(config),
+      <> config.to_string(config),
   )
   Ok(#(FooSchema(0), config))
 }
@@ -101,7 +110,7 @@ fn parse_bar(
   logging.log(
     logging.Info,
     "TODO: parse data into the bar type constructor, config="
-      <> string.inspect(config),
+      <> config.to_string(config),
   )
   Ok(#(BarSchema("testtest"), config))
 }
@@ -121,10 +130,7 @@ fn save_resource_to_temporary_file(
   // TODO: save data to temporary file
   logging.log(
     logging.Info,
-    "TODO: save resource to temp file="
-      <> string.inspect(config.temp)
-      <> ", config="
-      <> string.inspect(config),
+    "TODO: save resource to temp file, config=" <> config.to_string(config),
   )
   Ok(#(data, config))
 }
@@ -133,18 +139,12 @@ fn download_resource(config: Config) -> Result(#(Data, Config), ScraperError) {
   // TODO: download resource
   logging.log(
     logging.Info,
-    "TODO: implement download resources, config=" <> string.inspect(config),
+    "TODO: implement download resources, config=" <> config.to_string(config),
   )
-  case config.source {
-    FooSourceResource(SourceResource(resource)) ->
-      Ok(#(
-        FooData("processed foo resource =" <> string.inspect(resource)),
-        config,
-      ))
-    BarSourceResource(SourceResource(resource)) ->
-      Ok(#(
-        BarData("processed bar resource =" <> string.inspect(resource)),
-        config,
-      ))
+  case config.get_source(config) {
+    FooSourceResource(foo) ->
+      Ok(#(FooData("processed foo resource =" <> string.inspect(foo)), config))
+    BarSourceResource(bar) ->
+      Ok(#(BarData("processed bar resource =" <> string.inspect(bar)), config))
   }
 }
