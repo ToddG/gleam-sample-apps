@@ -1,0 +1,21 @@
+{
+  "boolean": true,
+  "color": "gold",
+  "null": null,
+  "number": 123,
+  "foo": {
+    "boolean": false,
+    "a": "b",
+    "c": "d",
+    "nested1": {
+      "nested2": {
+        "array": [
+          1,
+          2,
+          3
+        ]
+      }
+    }
+  },
+  "string": "Hello World"
+}
