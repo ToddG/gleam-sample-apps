@@ -6,6 +6,8 @@
 gleam run   # Run the project
 ```
 
+See [discussion here](https://discordapp.com/channels/768594524158427167/1437961129644003479/1437965073120235551)
+
 Produces this error (but only if this is set in gleam.toml):
 
     [erlang]
