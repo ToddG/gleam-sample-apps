@@ -87,3 +87,21 @@ unmatched value:
 
 stacktrace:
 ```
+
+This error was caused by not including the args [here](https://github.com/ToddG/gleam-sample-apps/blob/d6308f6fbe06971c85a142f778d18e37f1834e5d/backend2/src/backend2_app.gleam#L14C1-L14C75).
+
+This resulted in an error at runtime (not compile time):
+
+```rust
+pub fn start() -> Result(process.Pid, actor.StartError) {
+    ...
+}
+```
+
+This is the correct form:
+
+```
+pub fn start(_app: Atom, _type) -> Result(process.Pid, actor.StartError) {
+    ...
+}
+```
