@@ -1,4 +1,8 @@
 .ssh_host*
 *_key
 *_key.pub
-
+*.beam
+*.ez
+/build
+erl_crash.dump
+ssh_*

@@ -1,5 +1,5 @@
 import config.{type Config}
-import error.{type ScraperError}
+import error.{type AppError}
 import gleam/result
 import gleam/string
 import logging
@@ -45,7 +45,7 @@ pub type Schema {
   BarSchema(String)
 }
 
-fn emit_metrics(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
+fn emit_metrics(value: #(t, Config)) -> Result(#(t, Config), AppError) {
   // TODO: emit metrics
   let #(data, config) = value
   logging.log(
@@ -55,7 +55,7 @@ fn emit_metrics(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   Ok(#(data, config))
 }
 
-fn delete_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
+fn delete_temp_file(value: #(t, Config)) -> Result(#(t, Config), AppError) {
   // TODO: delete temp file
   let #(data, config) = value
   logging.log(
@@ -65,7 +65,7 @@ fn delete_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
   Ok(#(data, config))
 }
 
-fn archive_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) {
+fn archive_temp_file(value: #(t, Config)) -> Result(#(t, Config), AppError) {
   // TODO: archive temp file
   let #(data, config) = value
   logging.log(
@@ -78,7 +78,7 @@ fn archive_temp_file(value: #(t, Config)) -> Result(#(t, Config), ScraperError) 
 
 fn load_file_into_database(
   value: #(t, Config),
-) -> Result(#(t, Config), ScraperError) {
+) -> Result(#(t, Config), AppError) {
   // TODO: load file into db
   let #(data, config) = value
   logging.log(
@@ -91,7 +91,7 @@ fn load_file_into_database(
 fn parse_foo(
   _data: Data,
   config: Config,
-) -> Result(#(Schema, Config), ScraperError) {
+) -> Result(#(Schema, Config), AppError) {
   // TODO: parse data into the foo type constructor
   logging.log(
     logging.Info,
@@ -104,7 +104,7 @@ fn parse_foo(
 fn parse_bar(
   _data: Data,
   config: Config,
-) -> Result(#(Schema, Config), ScraperError) {
+) -> Result(#(Schema, Config), AppError) {
   // TODO: parse data into the bar type constructor
   logging.log(
     logging.Info,
@@ -114,7 +114,7 @@ fn parse_bar(
   Ok(#(BarSchema("testtest"), config))
 }
 
-fn parse_data(value: #(Data, Config)) -> Result(#(Schema, Config), ScraperError) {
+fn parse_data(value: #(Data, Config)) -> Result(#(Schema, Config), AppError) {
   let #(data, config) = value
   case data {
     FooData(_) -> parse_foo(data, config)
@@ -124,7 +124,7 @@ fn parse_data(value: #(Data, Config)) -> Result(#(Schema, Config), ScraperError)
 
 fn save_resource_to_temporary_file(
   value: #(Data, Config),
-) -> Result(#(Data, Config), ScraperError) {
+) -> Result(#(Data, Config), AppError) {
   let #(data, config) = value
   // TODO: save data to temporary file
   logging.log(
@@ -134,7 +134,7 @@ fn save_resource_to_temporary_file(
   Ok(#(data, config))
 }
 
-fn download_resource(config: Config) -> Result(#(Data, Config), ScraperError) {
+fn download_resource(config: Config) -> Result(#(Data, Config), AppError) {
   // TODO: download resource
   logging.log(
     logging.Info,

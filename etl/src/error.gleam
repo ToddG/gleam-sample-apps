@@ -1,6 +1,6 @@
 import config.{type Config}
 
-pub type ScraperError {
+pub type AppError {
   ConfigError(config: Config, error: String)
   DownloadError(config: Config, error: String)
   FileWriterError(config: Config, error: String)
