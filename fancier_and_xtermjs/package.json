@@ -1,0 +1,22 @@
+{
+  "name": "demo2",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4",
+    "vite-gleam": "^0.4.3"
+  },
+  "dependencies": {
+    "@picocss/pico": "^2.1.1",
+    "@xterm/xterm": "^5.5.0"
+  }
+}
