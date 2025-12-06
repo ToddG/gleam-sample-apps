@@ -50,5 +50,7 @@ How to upload files to a webserver using mist.
 
 How to use the cron library.
 
+### monitoring
 
+* instrumented app with prometheus and grafana wired up in docker containers
 
