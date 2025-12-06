@@ -1,0 +1,37 @@
+services:
+  grafana:
+    image: grafana/grafana:12.4.0-19913286788-ubuntu
+    container_name: graf
+    ports:
+      - "3030:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - backend
+
+  prometheus:
+    image: prom/prometheus:v3.8.0
+    container_name: prom
+    ports:
+      - "9090:9090"
+    volumes:
+      - ${CURRENT_DIRECTORY}/config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - backend
+
+  instrumentedapp:
+    image: gleam_sample_apps/instrumentedapp:latest
+    container_name: app
+    ports:
+      - "2020:2020"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:

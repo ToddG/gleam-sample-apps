@@ -1,0 +1,26 @@
+# =============================================================================
+# library versions
+# =============================================================================
+[tools]
+erlang = "28.0.4"
+gleam = "1.13.0"
+
+[env]
+APP_METRICS_URL = "127.0.0.1:2222/"
+
+[tasks.app-build]
+description = "build the instrumented app"
+run = [
+    "docker buildx build -t gleam_sample_apps/instrumentedapp:latest -f Dockerfile . "
+    ]
+dir = "{{config_root}}/instrumentedapp"
+
+[tasks.containers-start]
+description = "run all servers"
+run = "export CURRENT_DIRECTORY={{config_root}} && docker compose -f docker-compose.yml up &"
+dir = "{{config_root}}"
+
+[tasks.containers-stop]
+description = "stop all servers"
+run = "docker compose -f docker-compose.yml down"
+dir = "{{config_root}}"
