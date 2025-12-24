@@ -1,7 +1,10 @@
 [tools]
+bun = "latest"
+elixir = "latest"
 erlang = "28.0.2"
-gleam = "latest"
+gleam = "1.14.0"
+jq = "1.8.1"
 node = "24.6.0"
 pnpm = "10.15.1"
-rebar = "latest"
+rebar = "3.25.1"
 rust = "1.89.0"
