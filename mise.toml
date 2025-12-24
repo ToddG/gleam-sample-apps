@@ -1,4 +1,5 @@
 [tools]
+elixir = "latest"
 erlang = "28.0.2"
 gleam = "1.13.0"
 jq = "1.8.1"
