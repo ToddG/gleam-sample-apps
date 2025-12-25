@@ -12,6 +12,11 @@
  * Gleam’s `@external` calls can find them.
  * ------------------------------------------------------------ */
 
+import {
+  Error,
+  Ok,
+} from "./gleam.mjs";
+
 (() => {
   // -----------------------------------------------------------------
   // 1️⃣ Load the Auth0 SDK
@@ -80,11 +85,11 @@
     async init(config) {
       if (auth0Client !== null) {
         // Re‑initialising is a no‑op; you could also throw if you prefer.
-        return "default";
+        return Ok("default");
       }
       const createClient = await loadAuth0Sdk();
       auth0Client = await createClient(config);
-      return "default";
+      return Ok("default");
     },
 
     /**
@@ -98,7 +103,7 @@
         throw new Error("Auth0 client not initialised – call init/1 first");
       }
       await auth0Client.loginWithRedirect(options);
-      return true;
+      return Ok(true);
     },
 
     /**
@@ -111,7 +116,7 @@
         throw new Error("Auth0 client not initialised");
       }
       const result = await auth0Client.handleRedirectCallback();
-      return result; // usually contains appState, etc.
+      return Ok(result); // usually contains appState, etc.
     },
 
     /**
@@ -125,7 +130,7 @@
         throw new Error("Auth0 client not initialised");
       }
       const token = await auth0Client.getTokenSilently(options);
-      return token;
+      return Ok(token);
     },
 
     /**
@@ -138,7 +143,7 @@
         throw new Error("Auth0 client not initialised");
       }
       const user = await auth0Client.getUser();
-      return user ?? null;
+      return Ok(user ?? null);
     },
 
     /**
@@ -152,7 +157,7 @@
         throw new Error("Auth0 client not initialised");
       }
       await auth0Client.logout(options);
-      return true;
+      return Ok(true);
     },
   };
 
