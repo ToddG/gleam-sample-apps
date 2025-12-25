@@ -9,22 +9,19 @@ import lustre/event
 import gleam/option.{type Option}
 import gleam/javascript/promise.{type Promise}
 
-// ------------------------------------------------------------------
-// ffi
-// ------------------------------------------------------------------
-@external(javascript, "./auth0_wrapper.js", "init")
-fn js_init_auth0(config: InitConfig) -> Promise(Result(String, String)) {
-  promise.resolve(Error("unkown error, config=" <> string.inspect(config)))
+pub fn example_promise_effect(on_result: fn(Result(String, String)) -> Msg) -> Effect(Msg) {
+  use dispatch <- effect.from
+  do_promise() |> promise.tap(fn(r) { on_result(r) |> dispatch })
+  Nil
 }
 
-// ------------------------------------------------------------------
-// ffi wrapper
-// ------------------------------------------------------------------
-pub fn init_auth0(config: InitConfig) -> Effect(Msg) {
-  use dispatch <- effect.from
-  let p = js_init_auth0(config)
-  promise.await(p, fn(result) { dispatch(common.Auth0PromiseInit(result)) })
+pub fn testing_on_result(r: Result(String, String)) -> Msg{
+    Testing(r)
 }
+
+@external(javascript, "./app.ffi.mjs", "promiseTest")
+fn do_promise() -> Promise(Result(String, String))
+
 
 /// The `Msg` type describes all the ways the outside world can talk to our app.
 /// That includes user input, network requests, and any other external events.
@@ -66,11 +63,12 @@ type Model =
 /// initial state of the app.
 ///
 fn init(_) -> #(Model, Effect(Msg)) {
-  #(0, effect.none())
+  #(0, example_promise_effect(testing_on_result))
 }
 
 // UPDATE ----------------------------------------------------------------------
 pub type Msg {
+  Testing(r: Result(String, String))
   UserClickedIncrement
   UserClickedDecrement
   Auth0PromiseInit(result: Result(String, String))
@@ -90,6 +88,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     Auth0PromiseInit(result) -> {
       io.println("Auth0PromiseInit result=" <> string.inspect(result))
+      #(model, effect.none())
+    }
+    Testing(result) -> {
+      io.println("Testing result=" <> string.inspect(result))
       #(model, effect.none())
     }
   }
