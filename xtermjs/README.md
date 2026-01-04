@@ -3,13 +3,12 @@
 ## Log
 
 ```
-mkdir -p priv/webapp
-cd priv/webapp
 pnpm create vite
+... js_console
 
 tree -L 2
 
-priv/webapp/myconsole/
+priv/webapp/js_console/
 ├── index.html
 ├── node_modules
 │   └── vite -> .pnpm/vite@7.3.0/node_modules/vite
@@ -24,9 +23,10 @@ priv/webapp/myconsole/
     └── style.css
 ```
 
-## Development
+## Run
 
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
+```
+cd js_console
+pnpm vite
+// navigate to website
 ```
