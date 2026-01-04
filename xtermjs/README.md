@@ -1,20 +1,28 @@
 # xtermjs
 
-[![Package Version](https://img.shields.io/hexpm/v/xtermjs)](https://hex.pm/packages/xtermjs)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/xtermjs/)
+## Log
 
-```sh
-gleam add xtermjs@1
 ```
-```gleam
-import xtermjs
+mkdir -p priv/webapp
+cd priv/webapp
+pnpm create vite
 
-pub fn main() -> Nil {
-  // TODO: An example of the project in use
-}
+tree -L 2
+
+priv/webapp/myconsole/
+├── index.html
+├── node_modules
+│   └── vite -> .pnpm/vite@7.3.0/node_modules/vite
+├── package.json
+├── pnpm-lock.yaml
+├── public
+│   └── vite.svg
+└── src
+    ├── counter.js
+    ├── javascript.svg
+    ├── main.js
+    └── style.css
 ```
-
-Further documentation can be found at <https://hexdocs.pm/xtermjs>.
 
 ## Development
 
