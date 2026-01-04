@@ -1,6 +1,6 @@
 [tools]
 erlang = "28.0.2"
-gleam = "latest"
+gleam = "1.14.0"
 node = "24.6.0"
 pnpm = "10.15.1"
 rebar = "latest"
