@@ -1,7 +1,5 @@
-import formal/form.{type Form}
 import gleam/io
 import gleam/option.{None, Some}
-import gleam/result
 import gleam/string
 import gleam/uri.{type Uri}
 import lustre
@@ -10,7 +8,7 @@ import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import models.{
-  type Model, type Msg, type Route, type User, LoggedIn, Login, LoginData, Model,
+  type Model, type Msg, type Route, LoggedIn, Login, LoginData, Model,
   OnRouteChange, User, UserSubmittedForm, Wibble, Wobble,
 }
 import modem
