@@ -1,16 +1,21 @@
-import gleam/list
-import gleam/string
-import gleam/result
-import simplifile
+//// this is a working version using nested trys
+
 import gleam/io
+import gleam/list
+import gleam/result
+import gleam/string
+import gleam/string_tree
+import handles
 import handles/ctx
 import handles/error
 import logging
+import simplifile
 
 pub type AppError {
-  SimplifileFileError(error: simplifile.FileError, file: String)
-  HandlesTokenizerError(error: error.TokenizerError)
-  HandlesRuntimeError(error: error.RuntimeError)
+  CouldNotCompileTemplate(error: error.TokenizerError)
+  CouldNotEvaluateTemplate(error: error.RuntimeError)
+  CouldNotReadFile(error: simplifile.FileError, file: String)
+  CouldNotReadTemplate(error: AppError)
 }
 
 pub fn main() -> Result(String, AppError) {
@@ -22,44 +27,65 @@ pub fn main() -> Result(String, AppError) {
       ctx.Prop("value", ctx.Str("VALUEABC")),
     ])
 
-  reify_template_to_string(context, "./priv/template01.tmplt")
+  echo "test 01"
+  echo reify_template_to_string1(context, "./priv/template01.tmplt")
+
+  echo "test 02"
+  echo reify_template_to_string2(context, "./priv/template01.tmplt")
 }
 
-fn reify_template_to_string(
+// this is a working version using the `use` keyword
+fn reify_template_to_string1(
   context: ctx.Value,
   template_path: String,
 ) -> Result(String, AppError) {
-  // --------------------------------------------------------------
-  // 1. this seems like a logical way to write this, but it doesn't compile
-  // --------------------------------------------------------------
-  //  template_path
-  //  |> read_file
-  //  |> result.map(handles.prepare)
-  //  |> result.map_error(HandlesTokenizerError(_))
-  //  |> result.map(handles.run(_, context, []))
-  //  |> result.map_error(HandlesRuntimeError)
-  //  |> result.map(string_tree.to_string(_))
+  use text <- result.try(
+    template_path
+    |> read_file
+    |> result.map_error(CouldNotReadTemplate),
+  )
 
-  // --------------------------------------------------------------
-  // 2. another try, this time nested, this doesn't compile either
-  // --------------------------------------------------------------
+  use compiled_template <- result.try(
+    handles.prepare(text)
+    |> result.map_error(CouldNotCompileTemplate),
+  )
+
+  use output <- result.try(
+    handles.run(compiled_template, context, [])
+    |> result.map_error(CouldNotEvaluateTemplate),
+  )
+
+  Ok(string_tree.to_string(output))
+}
+
+fn reify_template_to_string2(
+  context: ctx.Value,
+  template_path: String,
+) -> Result(String, AppError) {
   template_path
   |> read_file
-  |> result.map(fn(text) {
+  |> result.map_error(CouldNotReadTemplate)
+  |> result.try(fn(text){
     text
     |> handles.prepare
-    |> result.map_error(HandlesTokenizerError)
-    |> result.map(handles.run(_, context, []))
-    |> result.map_error(HandlesRuntimeError)
-    |> result.map(fn(a) { string_tree.to_string(a) |> Ok })
+    |> result.map_error(CouldNotCompileTemplate)
+    |> result.try(fn(compiled_template){
+      compiled_template
+      |> handles.run(context, [])
+      |> result.map_error(CouldNotEvaluateTemplate)
+      |> result.try(fn(generated_text){
+        generated_text
+        |> string_tree.to_string
+        |> Ok
+      })
+    })
   })
-//  |> result.flatten
 }
 
 fn read_file(path: String) -> Result(String, AppError) {
   path
   |> simplifile.read
-  |> result.map_error(SimplifileFileError(_, path))
+  |> result.map_error(CouldNotReadFile(_, path))
   |> result.map(fn(v) {
     debug("read file: " <> path)
     v
@@ -69,6 +95,7 @@ fn read_file(path: String) -> Result(String, AppError) {
 fn debug(s: String) -> Nil {
   log_stuff(logging.Debug, s)
 }
+
 fn log_stuff(level: logging.LogLevel, s: String) -> Nil {
   s |> string.split("\\n") |> list.map(fn(q: String) { logging.log(level, q) })
   Nil
