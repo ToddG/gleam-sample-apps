@@ -48,12 +48,7 @@ fn reify_template_to_string1(
   context: ctx.Value,
   template_path: String,
 ) -> Result(String, AppError) {
-  use text <- result.try(
-    template_path
-    |> read_file(fn(file: String, error: simplifile.FileError) {
-      CouldNotReadTemplate(file:, error:)
-    }),
-  )
+  use text <- result.try(read_file(template_path, CouldNotReadTemplate))
 
   use compiled_template <- result.try(
     handles.prepare(text)
@@ -71,9 +66,7 @@ fn reify_template_to_string2(
   template_path: String,
 ) -> Result(String, AppError) {
   template_path
-  |> read_file(fn(file: String, error: simplifile.FileError) {
-    CouldNotReadTemplate(file:, error:)
-  })
+  |> read_file(CouldNotReadTemplate)
   |> result.try(fn(text) {
     text
     |> handles.prepare
