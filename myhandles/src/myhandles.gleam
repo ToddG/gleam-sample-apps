@@ -11,13 +11,6 @@ import handles/error
 import logging
 import simplifile
 
-pub type AppError {
-  CouldNotCompileTemplate(error: error.TokenizerError)
-  CouldNotEvaluateTemplate(error: error.RuntimeError)
-  CouldNotReadFile(error: simplifile.FileError, file: String)
-  CouldNotReadTemplate(error: AppError)
-}
-
 pub fn main() -> Result(String, AppError) {
   io.println("Hello from myhandles!")
 
@@ -32,6 +25,22 @@ pub fn main() -> Result(String, AppError) {
 
   echo "test 02"
   echo reify_template_to_string2(context, "./priv/template01.tmplt")
+
+  echo "test 03 -- missing file"
+  echo reify_template_to_string1(context, "non-existent-file")
+
+  echo "test 04 -- malformed template"
+  echo reify_template_to_string1(context, "./priv/malformed_template.tmplt")
+
+  echo "test 05 -- good template, but missing keys"
+  echo reify_template_to_string1(context, "./priv/missing_keys_template.tmplt")
+}
+
+pub type AppError {
+  CouldNotCompileTemplate(file: String, error: error.TokenizerError)
+  CouldNotEvaluateTemplate(file: String, error: error.RuntimeError)
+  CouldNotReadTemplate(file: String, error: simplifile.FileError)
+  CouldNotReadSomeOtherFile(file: String, error: simplifile.FileError)
 }
 
 // this is a working version using the `use` keyword
@@ -41,20 +50,19 @@ fn reify_template_to_string1(
 ) -> Result(String, AppError) {
   use text <- result.try(
     template_path
-    |> read_file
-    |> result.map_error(CouldNotReadTemplate),
+    |> read_file(fn(file: String, error: simplifile.FileError) {
+      CouldNotReadTemplate(file:, error:)
+    }),
   )
 
   use compiled_template <- result.try(
     handles.prepare(text)
-    |> result.map_error(CouldNotCompileTemplate),
+    |> result.map_error(CouldNotCompileTemplate(template_path, _)),
   )
-
   use output <- result.try(
     handles.run(compiled_template, context, [])
-    |> result.map_error(CouldNotEvaluateTemplate),
+    |> result.map_error(CouldNotEvaluateTemplate(template_path, _)),
   )
-
   Ok(string_tree.to_string(output))
 }
 
@@ -63,17 +71,18 @@ fn reify_template_to_string2(
   template_path: String,
 ) -> Result(String, AppError) {
   template_path
-  |> read_file
-  |> result.map_error(CouldNotReadTemplate)
-  |> result.try(fn(text){
+  |> read_file(fn(file: String, error: simplifile.FileError) {
+    CouldNotReadTemplate(file:, error:)
+  })
+  |> result.try(fn(text) {
     text
     |> handles.prepare
-    |> result.map_error(CouldNotCompileTemplate)
-    |> result.try(fn(compiled_template){
+    |> result.map_error(CouldNotCompileTemplate(template_path, _))
+    |> result.try(fn(compiled_template) {
       compiled_template
       |> handles.run(context, [])
-      |> result.map_error(CouldNotEvaluateTemplate)
-      |> result.try(fn(generated_text){
+      |> result.map_error(CouldNotEvaluateTemplate(template_path, _))
+      |> result.try(fn(generated_text) {
         generated_text
         |> string_tree.to_string
         |> Ok
@@ -82,10 +91,13 @@ fn reify_template_to_string2(
   })
 }
 
-fn read_file(path: String) -> Result(String, AppError) {
+fn read_file(
+  path: String,
+  on_error: fn(String, simplifile.FileError) -> AppError,
+) -> Result(String, AppError) {
   path
   |> simplifile.read
-  |> result.map_error(CouldNotReadFile(_, path))
+  |> result.map_error(on_error(path, _))
   |> result.map(fn(v) {
     debug("read file: " <> path)
     v

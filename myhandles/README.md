@@ -22,30 +22,28 @@ Further documentation can be found at <https://hexdocs.pm/myhandles>.
 gleam run
 ```
 
-### Success Case
+### Output
 
 ```
 Hello from myhandles!
-src/myhandles.gleam:30
+src/myhandles.gleam:23
 "test 01"
-src/myhandles.gleam:31
+src/myhandles.gleam:24
 Ok("KEYABC = \"VALUEABC\"\n")
-src/myhandles.gleam:33
+src/myhandles.gleam:26
 "test 02"
-src/myhandles.gleam:34
+src/myhandles.gleam:27
 Ok("KEYABC = \"VALUEABC\"\n")
-```
-
-### Error Case
-
-```
-Hello from myhandles!
+src/myhandles.gleam:29
+"test 03 -- missing file"
 src/myhandles.gleam:30
-"test 01"
-src/myhandles.gleam:31
-Error(CouldNotReadTemplate(CouldNotReadFile(Enoent, "./priv/template01.tmplt")))
+Error(CouldNotReadTemplate("non-existent-file", Enoent))
+src/myhandles.gleam:32
+"test 04 -- malformed template"
 src/myhandles.gleam:33
-"test 02"
-src/myhandles.gleam:34
-Error(CouldNotReadTemplate(CouldNotReadFile(Enoent, "./priv/template01.tmplt")))
+Ok("{ key }} = VALUEABC\"\n")
+src/myhandles.gleam:35
+"test 05 -- good template, but missing keys"
+src/myhandles.gleam:36
+Error(CouldNotEvaluateTemplate("./priv/missing_keys_template.tmplt", UnknownProperty(2, ["bad_key"])))
 ```
