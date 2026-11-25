@@ -1,11 +1,12 @@
 all: init
 
-.PHONY:init
-init:
+.PHONY:freebsd_init
+freebsd_init:
 	sudo pkg install www/npm-node26
 	sudo npm config set allow-scripts=pnpm --location=user
 	sudo npm upgrade npm
 	sudo npm i -g pnpm
+
 
 .PHONY:build
 build:
